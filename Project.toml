@@ -1,0 +1,13 @@
+name = "EpiCont"
+uuid = "4979f922-efa8-4078-81ea-f78c226765dd"
+authors = ["Sandor Beregi"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1.8"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
