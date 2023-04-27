@@ -1,6 +1,10 @@
 using EpiCont
-using Test
 
-@testset "EpiCont.jl" begin
-    # Write your tests here.
-end
+using Random, Distributions
+using Base.Threads
+using PyCall, Conda
+
+#Conda.add("seaborn")
+plt = pyimport("matplotlib.pyplot")
+np = pyimport("numpy")
+sns = pyimport("seaborn") 
