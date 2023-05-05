@@ -46,16 +46,33 @@ mutable struct parameters
     delay_calc_v 
     binn
     distr_sel
+    under_rep_calc
 end
 
 #Define the parameters of the epidemic
+#Disease A (Covid-like)
+
 R0 = 3.5 #Basic Reproduction number
+gen_time = 6 #Generation time (in days)
 δ = 0.08 #Death rate
 I0 = 10 #initial no. of infections
 ndays = 21*7 #epidemic length
 ρ, ρvar = 0.6, 0. #Under reporting, mean/variance
 dρ = Normal(ρ, ρvar)
-repd_mean, repd_var = 21, 2 #Reporting delay, mean/variance
+repd_mean, repd_var = 6, 2 #Reporting delay, mean/variance
+
+# #Define the parameters of the epidemic
+#Disease B (Ebola-like)
+
+# R0 = 2.5 #Basic Reproduction number
+# gen_time = 11 #Generation time (in days)
+# δ = 0.08 #Death rate
+# I0 = 10 #initial no. of infections
+# ndays = 31*7 #epidemic length
+# ρ, ρvar = 1.0, 0. #Under reporting, mean/variance
+# dρ = Normal(ρ, ρvar)
+# repd_mean, repd_var = 12, 2 #Reporting delay, mean/variance
+
 N = 1e6 #Total population
 
 # Setting-up the control (using non-pharmaceutical interventions)
@@ -66,10 +83,12 @@ I_min = 100 #minimum treshold for action
 #Sim and control options
 cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
 use_inc = 1 #1: control for incidence, 0: control for infectiousness
-delay_calc_v = 1 #1: as in ref, 0: from incidence
-distr_sel = 0 #1: Poisson, 0: Binomial
+delay_calc_v = 0 #1: as in ref, 0: from incidence
+under_rep_calc = 1 #1: as in ref, 0: separately, from incidence
+distr_sel = 0 #0: Deterministic, 1: Poisson, 2: Binomial
+delay_on = 0 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
 
-binn = 2 
+binn = 10 
 #est_R = 1 #1: when making predictions use R estimated from data. 0: use model R
 
 #The cost function
@@ -93,7 +112,7 @@ R_est_wind = rf-2 #window for R estimation
 use_S = 0
 
 #Prediction window
-pred_days = rf*3
+pred_days = rf+1
 days = 1:ndays+pred_days
 
 #Distribution of the reporting delay
@@ -103,7 +122,10 @@ Ydelpdf = pdf.(Ydel,days)
 cdelpdf = sum(Ydelpdf)
 nYdel = Ydelpdf/cdelpdf
 
-
+if delay_on == 0
+    nYdel = zeros(length(days))
+    nYdel[1] = 1.0
+end
 
 #decisions considered
 dec = 1
@@ -143,7 +165,8 @@ I_min,
 n_ens,
 delay_calc_v,
 binn,
-distr_sel)
+distr_sel,
+under_rep_calc)
 
 reward = reward_sel(1)
 
@@ -163,7 +186,7 @@ R0est = zeros(ndays+pred_days, sim_ens) #estimated R0 from data
 #the goverment's policy on handling the epidemic
 policy = ones(Int8, ndays+pred_days, sim_ens) #we start without any restrictions
 
-Y = Erlang(4, 2.0)
+Y = Erlang(Int(round(gen_time/2.0)), 2.0)
 
 Ypdf = pdf.(Y,days)
 cpdf = sum(Ypdf)

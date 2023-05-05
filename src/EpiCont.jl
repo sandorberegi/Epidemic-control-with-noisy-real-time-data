@@ -104,6 +104,12 @@ module EpiCont
         delay_calc_v = par.delay_calc_v
         distr_sel = par.distr_sel
         binn = par.binn
+        under_rep_calc = par.under_rep_calc
+
+        ρcalc = 1.0
+        if under_rep_calc == 1
+            ρcalc = ρ
+        end
         
         for ii in 2:length(Ivect)
 
@@ -180,9 +186,11 @@ module EpiCont
             elseif distr_sel == 1
                 X = Poisson(Pois_input)    
                 Ivect[ii] = rand(X,1)[1]
-            else
+            elseif distr_sel == 2
                 X = Binomial(Int(round(Pois_input*binn)), 1/binn)
                 Ivect[ii] = rand(X,1)[1]
+            else
+                Ivect[ii] = Int(round(Pois_input))
             end
 
             Ldvect[ii] = sum(Ivect[ii-1:-1:1].* wd[1:ii-1])
@@ -193,19 +201,27 @@ module EpiCont
             #end
             
             if delay_calc_v == 1
-                Pois_input_c = sum(ρ.*Ivect[ii-1:-1:1].* w[1:ii-1].* nYdel[1:ii-1].* Revect[ii:-1:2])./sum(w[1:ii-1].* nYdel[1:ii-1])
+                Pois_input_c = sum(ρcalc.*Ivect[ii-1:-1:1].* w[1:ii-1].* nYdel[1:ii-1].* Revect[ii:-1:2])./sum(w[1:ii-1].* nYdel[1:ii-1])
             else
-                Pois_input_c = sum(ρ.*Ivect[ii-1:-1:1].* nYdel[1:ii-1].* Revect[ii:-1:2])./sum(nYdel[1:ii-1])
+                Pois_input_c = sum(ρcalc.*Ivect[ii-1:-1:1].* nYdel[1:ii-1])./sum(nYdel[1:ii-1])
             end
             if Pois_input_c < 0
                 cvect[ii] = 0
             elseif distr_sel == 1
                 Xc = Poisson(Pois_input_c)    
                 cvect[ii] = rand(Xc,1)[1]
-            else
+            elseif distr_sel == 2
                 Xc = Binomial(Int(round(Pois_input_c*binn)), 1/binn)
                 cvect[ii] = rand(Xc,1)[1]
+            else
+                cvect[ii] = Int(round(Pois_input_c))
             end
+
+            if under_rep_calc == 0
+                Xcc = Binomial(Int(round(ρ*cvect[ii]*binn)), 1/binn)
+                cvect[ii] = rand(Xcc,1)[1]
+            end
+
             #cvect[ii] = trunc(Int, (Ivect[ii]*ρ))
             Lcvect[ii] = sum(cvect[ii-1:-1:1].* w[1:ii-1])
             Svect[ii] = Svect[ii-1]-Ivect[ii]
@@ -274,9 +290,11 @@ module EpiCont
                 if distr_sel == 1
                     X = Poisson(Pois_input)    
                     Ivect[ii] = rand(X,1)[1]
-                else
+                elseif distr_sel == 2
                     X = Binomial(Int(round(Pois_input*binn)), 1/binn)
                     Ivect[ii] = rand(X,1)[1]
+                else
+                    Ivect[ii] = Int(round(Pois_input))
                 end
             else
                 Ivect[ii] = 0
