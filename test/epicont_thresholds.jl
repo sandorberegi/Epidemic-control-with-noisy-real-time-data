@@ -4,8 +4,6 @@ using Random, Distributions
 using Base.Threads
 using PyCall, Conda
 
-Random.seed!(1)
-
 #Conda.add("seaborn")
 plt = pyimport("matplotlib.pyplot")
 np = pyimport("numpy")
@@ -46,80 +44,56 @@ mutable struct parameters
     I_min
     n_ens
     delay_calc_v 
+    delay_on
     binn
     distr_sel
     under_rep_calc
     under_rep_on
-    delay_on
     rho_beta_a
     rho_beta_b
+    I_LD
+    I_nothing
 end
 
 #Define the parameters of the epidemic
 #Disease A (Covid-like)
 
-# R0 = 3.5 #Basic Reproduction number
-# gen_time = 6.5 #Generation time (in days)
-# gt_var = 2.1
-# δ = 0.08 #Death rate
-# I0 = 10 #initial no. of infections
-# ndays = 41*7 #epidemic length
-# ρ, ρvar = 0.25, 0.0 #Under reporting, mean/variance
-# repd_mean, del_disp = 10.5, 5.0 #Reporting delay, mean/variance
-
-# #Define the parameters of the epidemic
-#Disease B (Ebola-like)
-
-R0 = 2.5 #Basic Reproduction number
-gen_time = 15 #Generation time (in days)
+R0 = 3.5 #Basic Reproduction number
+gen_time = 6.5 #Generation time (in days)
 gt_var = 2.1
 δ = 0.08 #Death rate
 I0 = 10 #initial no. of infections
 ndays = 41*7 #epidemic length
-ρ, ρvar = 0.25, 0. #Under reporting, mean/variance
-repd_mean, del_disp = 10.5, 5.0 #Reporting delay, mean/variance
+ρ, ρvar = 0.4, 0.0 #Under reporting, mean/variance
+repd_mean, del_disp = 6, 2 #Reporting delay, mean/variance
 
-rho_beta_a = 8.0
+# #Define the parameters of the epidemic
+#Disease B (Ebola-like)
+
+# R0 = 2.5 #Basic Reproduction number
+# gen_time = 15 #Generation time (in days)
+# gt_var = 2.1
+# δ = 0.08 #Death rate
+# I0 = 10 #initial no. of infections
+# ndays = 41*7 #epidemic length
+# ρ, ρvar = 1.0, 0. #Under reporting, mean/variance
+# repd_mean, del_disp = 12, 2 #Reporting delay, mean/variance
+
+rho_beta_a = 50.0
 rho_beta_b = (1-ρ)/ρ * rho_beta_a
-N = 1e6 #Total population
+
+N = 1e7 #Total population
 
 # Setting-up the control (using non-pharmaceutical interventions)
 ctrl_states = ["No restrictions", "Social distancing", "Lockdown"]
 R_coeff = [1.0, 0.5, 0.2] #R0_act = R0 * ctrl_states
-I_min = 0 #minimum treshold for action
+I_min = 10 #minimum treshold for action
 
 #Sim and control options
-# cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
-# use_inc = 1 #1: control for incidence, 0: control for infectiousness
-# delay_calc_v = 0 #1: as in ref, 0: from incidence
-# under_rep_calc = 1 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
-# distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-# delay_on = 0 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
-# under_rep_on = 0 #0: no under reporting, 1: calculate with under-reporting
-
-# # for ur only
-# cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
-# use_inc = 1 #1: control for incidence, 0: control for infectiousness
-# delay_calc_v = 0 #1: as in ref, 0: from incidence
-# under_rep_calc = 3 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
-# distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-# delay_on = 0 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
-# under_rep_on = 1 #0: no under reporting, 1: calculate with under-reporting
-
-# # for delay only
-# cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
-# use_inc = 1 #1: control for incidence, 0: control for infectiousness
-# delay_calc_v = 0 #1: as in ref, 0: from incidence
-# under_rep_calc = 1 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
-# distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-# delay_on = 1 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
-# under_rep_on = 0 #0: no under reporting, 1: calculate with under-reporting
-
-# # for delay and ur
 cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
 use_inc = 1 #1: control for incidence, 0: control for infectiousness
 delay_calc_v = 0 #1: as in ref, 0: from incidence
-under_rep_calc = 3 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
+under_rep_calc = 2 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
 distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
 delay_on = 1 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
 under_rep_on = 1 #0: no under reporting, 1: calculate with under-reporting
@@ -132,35 +106,35 @@ cost_of_state = [0.0, 0.01, 0.15] #Cost of interventions/day
 Lc_target = 5000 #desired infectiousness
 Lc_target_pen = Lc_target*1.5 #extra overshoot penalty
 R_target = 1.0
-#alpha = 1.3/Lc_target #~proportional gain (regulates error) covid
-alpha = 3.25/Lc_target #~proportional gain (regulates error) ebola
+alpha = 1.587/Lc_target #~proportional gain (regulates error)
 beta = 0.0 #~derivative gain (regulates error velocity)
 ovp = 5.0 #overshoot penalty
 γ = 0.95 #discounting factor
 
+I_LD = 2500
+I_nothing = 1500
+# I_LD = 3000
+# I_nothing = 3500
+
 #Simulation parameters
-n_ens = 100 #MC assembly size for 4
-sim_ens = 100 #assembly size for full simulation
+n_ens = 100 #MC assembly size for prediction
+sim_ens = 1000 #assembly size for full simulation
 
 #Frequecy of policy review
-rf = 14 #days 7
-R_est_wind = 5#rf-2 #window for R estimation
+rf = 7 #days
+R_est_wind = rf-2 #window for R estimation
 use_S = 0
 
 #Prediction window
-pred_days = 14 #14 #21 #12
+pred_days = 12
 days = 1:ndays+pred_days
 
 #Distribution of the reporting delay
 
-Ydel = Gamma(del_disp, repd_mean/del_disp)
+Ydel = Gamma(repd_mean/del_disp, del_disp)
 Ydelpdf = pdf.(Ydel,days)
 cdelpdf = sum(Ydelpdf)
 nYdel = Ydelpdf/cdelpdf
-
-plt.plot(days,nYdel)
-plt.xlim([0,25])
-plt.show()
 
 if delay_on == 0
     nYdel = zeros(length(days))
@@ -204,15 +178,17 @@ policies,
 I_min,
 n_ens,
 delay_calc_v,
+delay_on,
 binn,
 distr_sel,
 under_rep_calc,
 under_rep_on,
-delay_on,
 rho_beta_a,
-rho_beta_b)
+rho_beta_b,
+I_LD,
+I_nothing)
 
-reward = reward_sel(cost_sel)
+reward = reward_sel(1)
 
 #Initialisation
 Ivect = zeros(ndays+pred_days, sim_ens)
@@ -236,10 +212,6 @@ Ypdf = pdf.(Y,days)
 cpdf = sum(Ypdf)
 nY = Ypdf/cpdf
 
-plt.plot(days,nY)
-plt.xlim([0,25])
-plt.show()
-
 #Risk of death wrt. time of becoming infectious
 
 Yd = Erlang(7, 3.0)
@@ -260,26 +232,11 @@ Rewvect[1,:] .= R0
 Rest[1,:] .= 1.0
 R0est[1,:] .= 1.0
 
-# #Perform the simulation
-# Threads.@threads for ii in 1:sim_ens
-#     #repd_ii = repd[ii]
-#     Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par)
-# end
-
 #Perform the simulation
 Threads.@threads for ii in 1:sim_ens
     #repd_ii = repd[ii]
-    Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds_noS(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par)
+    Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_treshold(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par)
 end
-
-## Save results
-using JLD
-
-##filename = "workspace_variables_opt_rf_$(rf)_gamma_$(γ)_del_$(mm)_delv_$(jj)_under_$(kk).jld"   
-#filename = "workspace_variables_opt_rf_$(rf)_gamma_$(γ)_no_delay_under_toplot.jld"
-
-#@save filename par Ivect Revect Lvect Lcvect Dvect Svect cvect Rewvect policy Rest R0est
-
 
 ## Plot results
 
@@ -293,13 +250,13 @@ mean_I = zeros(ndays)
 mean_L = zeros(ndays)
 
 for ii in 1:ndays
-    low_quant_I[ii] = quantile(cvect[ii,:], 0.05)
+    low_quant_I[ii] = quantile(Ivect[ii,:], 0.05)
     low_quant_L[ii] = quantile(Lvect[ii,:], 0.05)
-    high_quant_I[ii] = quantile(cvect[ii,:], 0.95)
+    high_quant_I[ii] = quantile(Ivect[ii,:], 0.95)
     high_quant_L[ii] = quantile(Lvect[ii,:], 0.95)
-    median_quant_I[ii] = quantile(cvect[ii,:], 0.5)
+    median_quant_I[ii] = quantile(Ivect[ii,:], 0.5)
     median_quant_L[ii] = quantile(Lvect[ii,:], 0.5)
-    mean_I[ii] = mean(cvect[ii,:])
+    mean_I[ii] = mean(Ivect[ii,:])
     mean_L[ii] = mean(Lvect[ii,:])
 end
 
@@ -439,13 +396,13 @@ mean_I = zeros(ndays)
 mean_L = zeros(ndays)
 
 for ii in 1:ndays
-    low_quant_I[ii] = quantile(cvect[ii,:], 0.05)
+    low_quant_I[ii] = quantile(Ivect[ii,:], 0.05)
     low_quant_L[ii] = quantile(Lcvect[ii,:], 0.05)
-    high_quant_I[ii] = quantile(cvect[ii,:], 0.95)
+    high_quant_I[ii] = quantile(Ivect[ii,:], 0.95)
     high_quant_L[ii] = quantile(Lcvect[ii,:], 0.95)
-    median_quant_I[ii] = quantile(cvect[ii,:], 0.5)
+    median_quant_I[ii] = quantile(Ivect[ii,:], 0.5)
     median_quant_L[ii] = quantile(Lcvect[ii,:], 0.5)
-    mean_I[ii] = mean(cvect[ii,:])
+    mean_I[ii] = mean(Ivect[ii,:])
     mean_L[ii] = mean(Lcvect[ii,:])
 end
 
@@ -577,7 +534,7 @@ plt.show()
 
 for ii in 1:sim_ens
     x = 1:ndays+pred_days
-    I_tmp = cvect[:,ii]
+    I_tmp = Ivect[:,ii]
 
     p_tmp = policy[:,ii]
 
@@ -613,94 +570,57 @@ x_targ = [0,ndays]
 y_targ = [Lc_target,Lc_target]
 y_min = [I_min,I_min]
 
-min_I_vect = zeros(sim_ens)
-max_I_vect = zeros(sim_ens)
-bound_starts = zeros(sim_ens)
-
-for ii in 1:sim_ens
-
-    R_cross_one = diff(sign.(Rewvect[:,ii].-1.0)).<0
-    indxs = 1:length(R_cross_one)
-
-    indx_ss = indxs[R_cross_one][1]
-    bound_starts[ii] = indx_ss
-
-    reduced_I = Ivect[indx_ss:ndays, ii]
-
-    I_cross_targ = diff(sign.(reduced_I.-Lc_target)).<0
-    indxs_I = 1:length(I_cross_targ)
-
-    indx_ss_I = indxs_I[I_cross_targ][1]
-    bound_starts[ii] = indx_ss + indx_ss_I + 1
-    
-    max_I_vect[ii] = maximum(Ivect[(indx_ss + indx_ss_I):ndays, ii])
-    min_I_vect[ii] = minimum(Ivect[(indx_ss + indx_ss_I):ndays, ii])
-
-end
-
-bound_start = minimum(bound_starts)
-env_size = max_I_vect - min_I_vect
-
-max100 = maximum(max_I_vect)
-max95 = quantile(max_I_vect, 0.95)
-min5 = quantile(min_I_vect, 0.05)
-min0 = minimum(min_I_vect)
-
 plt.plot(x_targ, y_targ, color="black", linewidth=1.0, linestyle="--")
-#plt.plot(x_targ, y_min, color="blue", linewidth=1.0, linestyle="--")
+plt.plot(x_targ, y_min, color="blue", linewidth=1.0, linestyle="--")
+plt.plot(x_targ, [I_LD, I_LD], color="red", linewidth=1.0, linestyle="--")
+plt.plot(x_targ, [I_nothing, I_nothing], color="green", linewidth=1.0, linestyle="--")
 #plt.plot(collect(1:ndays), low_quant_I, color="yellow", linewidth=0.75, linestyle="dotted")
 #plt.plot(collect(1:ndays), high_quant_I, color="yellow", linewidth=0.75, linestyle="dotted")
 #plt.plot(collect(1:ndays), median_quant_I, color="yellow", linewidth=0.75, linestyle="dotted")
 #plt.plot(collect(1:ndays), mean_I, color="cyan", linewidth=0.75, linestyle="dashed")
-
-#plt.plot([bound_start,ndays], [max100,max100], color="red", linewidth=2.0, linestyle="--")
-#plt.plot([bound_start,ndays], [min0,min0], color="red", linewidth=2.0, linestyle="--")
 plt.xlim([0,ndays])
 plt.xlabel("time [days]")
 plt.ylabel("New infections")
+plt.savefig("threshold_I.png", dpi=300)
 
-cd("figs4/ebola_real14_bin")
-plt.savefig("incidence_multi.svg")
 plt.show()
 
 ## highlight one trajectory
 
 for ii in 1:sim_ens
     x = 1:ndays+pred_days
-    I_tmp = cvect[:,ii]
+    I_tmp = Ivect[:,ii]
     p_tmp = policy[:,ii]
 
-    # x_n = collect(float(copy(x)))
-    # x_s = collect(float(copy(x)))
-    # x_l = collect(float(copy(x)))
-    # I_n = copy(I_tmp)
-    # I_s = copy(I_tmp)
-    # I_l = copy(I_tmp)
+    x_n = collect(float(copy(x)))
+    x_s = collect(float(copy(x)))
+    x_l = collect(float(copy(x)))
+    I_n = copy(I_tmp)
+    I_s = copy(I_tmp)
+    I_l = copy(I_tmp)
 
-    # x_n[p_tmp.==2] .= NaN
-    # x_n[p_tmp.==3] .= NaN
-    # I_n[p_tmp.==2] .= NaN
-    # I_n[p_tmp.==3] .= NaN
+    x_n[p_tmp.==2] .= NaN
+    x_n[p_tmp.==3] .= NaN
+    I_n[p_tmp.==2] .= NaN
+    I_n[p_tmp.==3] .= NaN
 
-    # x_s[p_tmp.==1] .= NaN
-    # x_s[p_tmp.==3] .= NaN
-    # I_s[p_tmp.==1] .= NaN
-    # I_s[p_tmp.==3] .= NaN
+    x_s[p_tmp.==1] .= NaN
+    x_s[p_tmp.==3] .= NaN
+    I_s[p_tmp.==1] .= NaN
+    I_s[p_tmp.==3] .= NaN
 
-    # x_l[p_tmp.==1] .= NaN
-    # x_l[p_tmp.==2] .= NaN
-    # I_l[p_tmp.==1] .= NaN
-    # I_l[p_tmp.==2] .= NaN
+    x_l[p_tmp.==1] .= NaN
+    x_l[p_tmp.==2] .= NaN
+    I_l[p_tmp.==1] .= NaN
+    I_l[p_tmp.==2] .= NaN
 
-    # plt.plot(x_n, I_n, color="lightgreen", alpha=0.05/1.5)
-    # plt.plot(x_s, I_s, color="magenta", alpha=0.03/1.5)
-    plt.plot(x, I_tmp, color="black", alpha=0.05/1.5)
-
+    plt.plot(x_n, I_n, color="lightgreen", alpha=0.005)
+    plt.plot(x_s, I_s, color="magenta", alpha=0.003)
+    plt.plot(x_l, I_l, color="red", alpha=0.005)
 end
 
 x = 1:ndays+pred_days
-I_tmp = cvect[:,ens_sel]
-I2_tmp = Ivect[:,ens_sel]
+I_tmp = Ivect[:,ens_sel]
 p_tmp = policy[:,ens_sel]
 
 x_n = collect(float(copy(x)))
@@ -710,53 +630,36 @@ I_n = copy(I_tmp)
 I_s = copy(I_tmp)
 I_l = copy(I_tmp)
 
-I2_n = copy(I2_tmp)
-I2_s = copy(I2_tmp)
-I2_l = copy(I2_tmp)
-
 x_n[p_tmp.==2] .= NaN
 x_n[p_tmp.==3] .= NaN
 I_n[p_tmp.==2] .= NaN
 I_n[p_tmp.==3] .= NaN
-I2_n[p_tmp.==2] .= NaN
-I2_n[p_tmp.==3] .= NaN
 
 x_s[p_tmp.==1] .= NaN
 x_s[p_tmp.==3] .= NaN
 I_s[p_tmp.==1] .= NaN
 I_s[p_tmp.==3] .= NaN
-I2_s[p_tmp.==1] .= NaN
-I2_s[p_tmp.==3] .= NaN
 
 x_l[p_tmp.==1] .= NaN
 x_l[p_tmp.==2] .= NaN
 I_l[p_tmp.==1] .= NaN
 I_l[p_tmp.==2] .= NaN
-I2_l[p_tmp.==1] .= NaN
-I2_l[p_tmp.==2] .= NaN
-
-plt.plot(collect(1:ndays), low_quant_I, color="black", linewidth=1.0)
-plt.plot(collect(1:ndays), high_quant_I, color="black", linewidth=1.0)
-#plt.plot(collect(1:ndays), median_quant_I, color="yellow", linewidth=0.75, linestyle="dotted")
-plt.plot(collect(1:ndays), mean_I, color="black", linewidth=1.0)
 
 plt.plot(x_n, I_n, color="green", linewidth=3, alpha=1)
 plt.plot(x_s, I_s, color="purple", linewidth=3, alpha=1)
 plt.plot(x_l, I_l, color="red", linewidth=3, alpha=1)
 
-plt.plot(x_n, I2_n, color="green", linewidth=1, alpha=1, linestyle="-")
-plt.plot(x_s, I2_s, color="purple", linewidth=1, alpha=1, linestyle="-")
-plt.plot(x_l, I2_l, color="red", linewidth=1, alpha=1, linestyle="-")
-
 plt.plot(x_targ, y_targ, color="black", linewidth=1.0, linestyle="--")
-#plt.plot(x_targ, y_min, color="blue", linewidth=1.0, linestyle="--")
+plt.plot(x_targ, y_min, color="blue", linewidth=1.0, linestyle="--")
+plt.plot(x_targ, [I_LD, I_LD], color="red", linewidth=1.0, linestyle="--")
+plt.plot(x_targ, [I_nothing, I_nothing], color="green", linewidth=1.0, linestyle="--")
 plt.xlim([0,ndays])
 plt.xlabel("time [days]")
-plt.ylabel("New cases/infections")
+plt.ylabel("New infections")
 
-plt.savefig("incidence_highlight.svg")
+#plt.savefig("threshold_I_idR.png", dpi=300)
 plt.show()
-#plt.savefig("I_idR.png", dpi=300)
+
 
 ##show reported cases
 
@@ -934,37 +837,36 @@ for ii in 1:sim_ens
     R_tmp = Rewvect[:,ii]
     p_tmp = policy[:,ii]
 
-    # x_n = collect(float(copy(x)))
-    # x_s = collect(float(copy(x)))
-    # x_l = collect(float(copy(x)))
-    # R_n = copy(R_tmp)
-    # R_s = copy(R_tmp)
-    # R_l = copy(R_tmp)
+    x_n = collect(float(copy(x)))
+    x_s = collect(float(copy(x)))
+    x_l = collect(float(copy(x)))
+    R_n = copy(R_tmp)
+    R_s = copy(R_tmp)
+    R_l = copy(R_tmp)
 
-    # x_n[p_tmp.==2] .= NaN
-    # x_n[p_tmp.==3] .= NaN
-    # R_n[p_tmp.==2] .= NaN
-    # R_n[p_tmp.==3] .= NaN
+    x_n[p_tmp.==2] .= NaN
+    x_n[p_tmp.==3] .= NaN
+    R_n[p_tmp.==2] .= NaN
+    R_n[p_tmp.==3] .= NaN
 
-    # x_s[p_tmp.==1] .= NaN
-    # x_s[p_tmp.==3] .= NaN
-    # R_s[p_tmp.==1] .= NaN
-    # R_s[p_tmp.==3] .= NaN
+    x_s[p_tmp.==1] .= NaN
+    x_s[p_tmp.==3] .= NaN
+    R_s[p_tmp.==1] .= NaN
+    R_s[p_tmp.==3] .= NaN
 
-    # x_l[p_tmp.==1] .= NaN
-    # x_l[p_tmp.==2] .= NaN
-    # R_l[p_tmp.==1] .= NaN
-    # R_l[p_tmp.==2] .= NaN
+    x_l[p_tmp.==1] .= NaN
+    x_l[p_tmp.==2] .= NaN
+    R_l[p_tmp.==1] .= NaN
+    R_l[p_tmp.==2] .= NaN
 
-    # plt.plot(x_n, R_n, color="lightgreen", alpha=0.05/1.5)
-    # plt.plot(x_s, R_s, color="magenta", alpha=0.03/1.5)
-    plt.plot(x, R_tmp, color="black", alpha=0.05/1.5)
+    plt.plot(x_n, R_n, color="lightgreen", alpha=0.005)
+    plt.plot(x_s, R_s, color="magenta", alpha=0.003)
+    plt.plot(x_l, R_l, color="red", alpha=0.005)
 end
 
 x = 1:ndays+pred_days
 R_tmp = Rewvect[:,ens_sel]
 p_tmp = policy[:,ens_sel]
-R_est_tmp = Rest[:,ens_sel]
 
 x_n = collect(float(copy(x)))
 x_s = collect(float(copy(x)))
@@ -973,46 +875,31 @@ R_n = copy(R_tmp)
 R_s = copy(R_tmp)
 R_l = copy(R_tmp)
 
-R_est_n = copy(R_est_tmp)
-R_est_s = copy(R_est_tmp)
-R_est_l = copy(R_est_tmp)
-
 x_n[p_tmp.==2] .= NaN
 x_n[p_tmp.==3] .= NaN
 R_n[p_tmp.==2] .= NaN
 R_n[p_tmp.==3] .= NaN
-R_est_n[p_tmp.==2] .= NaN
-R_est_n[p_tmp.==3] .= NaN
 
 x_s[p_tmp.==1] .= NaN
 x_s[p_tmp.==3] .= NaN
 R_s[p_tmp.==1] .= NaN
 R_s[p_tmp.==3] .= NaN
-R_est_s[p_tmp.==1] .= NaN
-R_est_s[p_tmp.==3] .= NaN
 
 x_l[p_tmp.==1] .= NaN
 x_l[p_tmp.==2] .= NaN
 R_l[p_tmp.==1] .= NaN
 R_l[p_tmp.==2] .= NaN
-R_est_l[p_tmp.==1] .= NaN
-R_est_l[p_tmp.==2] .= NaN
 
 plt.plot(x_n, R_n, color="green", linewidth=3, alpha=1)
 plt.plot(x_s, R_s, color="purple", linewidth=3, alpha=1)
 plt.plot(x_l, R_l, color="red", linewidth=3, alpha=1)
 
-plt.plot(x_n, R_est_n, color="green", linewidth=1, alpha=1, linestyle="-")
-plt.plot(x_s, R_est_s, color="purple", linewidth=1, alpha=1, linestyle="-")
-plt.plot(x_l, R_est_l, color="red", linewidth=1, alpha=1, linestyle="-")
-
 plt.plot(x_targ, y_targ, color="black", linewidth=1.0, linestyle="--")
 plt.xlim([0,ndays])
 plt.xlabel("time [days]")
 plt.ylabel("Reproduction number")
-plt.ylim([0,4])
 
-plt.savefig("R_highlight.svg")
+
 plt.show()
 
 
@@ -1228,7 +1115,6 @@ plt.pie(means, colors=["green","purple","red"],autopct="%1.1f%%",labels=ctrl_sta
 my_circle=plt.Circle( (0,0), 0.7, color="white")
 p=plt.gcf()
 p.gca().add_artist(my_circle)
-plt.savefig("policy_pie.svg")
 plt.show()
 
 ##
@@ -1275,7 +1161,7 @@ function Φ(Lcvect, Revect, policy)
     Lcost = -alpha./Lc_target * norm(Lcvect[1:ndays] .- Lc_target,1) 
     Rcost = -beta * norm(Revect[1:ndays] .- 1.0,1) 
     policycost = - norm(cfs[1:ndays], 1) 
-    overshootcost = - norm(over_pen[1:ndays], 1)
+    overshootcost = - norm(over_pen[1:ndays], 1) 
     return [res, Lcost, Rcost, policycost, overshootcost]
 end
 
@@ -1525,7 +1411,7 @@ plt.xlim([0,ndays])
 plt.xlabel("time [days]")
 plt.ylabel("Reported cases")
 
-
+plt.savefig("threshold_rep_I.png", dpi=300)
 plt.show()
 
 ## Compare individual trajctories

@@ -82,7 +82,7 @@ cost_of_state = [0.0, 0.01, 0.15] #Cost of interventions/day
 Lc_target = 5000 #desired infectiousness
 Lc_target_pen = Lc_target*1.5 #extra overshoot penalty
 R_target = 1.0
-alpha = 1.587/Lc_target #~proportional gain (regulates error)
+alpha = 1.3/Lc_target #~proportional gain (regulates error)
 beta = 0.0 #~derivative gain (regulates error velocity)
 cost_of_state = [0.0, 0.01, 0.15]
 ovp = 5.0 #overshoot penalty
@@ -229,7 +229,7 @@ function epi_opt(;pred_days,rf)
     Threads.@threads for ii in 1:sim_ens
 
 
-        Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par0)
+        Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds_noS(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par0)
         
         reward_ens[ii] = Φ(Lcvect[:,ii], Rewvect[:,ii], policy[:,ii])
     end

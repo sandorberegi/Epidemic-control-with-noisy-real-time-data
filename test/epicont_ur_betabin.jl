@@ -58,28 +58,29 @@ end
 #Define the parameters of the epidemic
 #Disease A (Covid-like)
 
-# R0 = 3.5 #Basic Reproduction number
-# gen_time = 6.5 #Generation time (in days)
-# gt_var = 2.1
-# δ = 0.08 #Death rate
-# I0 = 10 #initial no. of infections
-# ndays = 41*7 #epidemic length
-# ρ, ρvar = 0.25, 0.0 #Under reporting, mean/variance
-# repd_mean, del_disp = 10.5, 5.0 #Reporting delay, mean/variance
-
-# #Define the parameters of the epidemic
-#Disease B (Ebola-like)
-
-R0 = 2.5 #Basic Reproduction number
-gen_time = 15 #Generation time (in days)
+R0 = 3.5 #Basic Reproduction number
+R01 = 4.5
+gen_time = 6.5 #Generation time (in days)
 gt_var = 2.1
 δ = 0.08 #Death rate
 I0 = 10 #initial no. of infections
 ndays = 41*7 #epidemic length
-ρ, ρvar = 0.25, 0. #Under reporting, mean/variance
-repd_mean, del_disp = 10.5, 5.0 #Reporting delay, mean/variance
+ρ, ρvar = 0.3, 0.0 #Under reporting, mean/variance
+repd_mean, del_disp = 14.0, sqrt(200.0) #Reporting delay, mean/variance
 
-rho_beta_a = 8.0
+# #Define the parameters of the epidemic
+#Disease B (Ebola-like)
+
+# R0 = 2.5 #Basic Reproduction number
+# gen_time = 15 #Generation time (in days)
+# gt_var = 2.1
+# δ = 0.08 #Death rate
+# I0 = 10 #initial no. of infections
+# ndays = 41*7 #epidemic length
+# ρ, ρvar = 0.25, 0. #Under reporting, mean/variance
+# repd_mean, del_disp = 10.5, 5.0 #Reporting delay, mean/variance
+
+rho_beta_a = 50.0
 rho_beta_b = (1-ρ)/ρ * rho_beta_a
 N = 1e6 #Total population
 
@@ -89,42 +90,15 @@ R_coeff = [1.0, 0.5, 0.2] #R0_act = R0 * ctrl_states
 I_min = 0 #minimum treshold for action
 
 #Sim and control options
-# cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
-# use_inc = 1 #1: control for incidence, 0: control for infectiousness
-# delay_calc_v = 0 #1: as in ref, 0: from incidence
-# under_rep_calc = 1 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
-# distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-# delay_on = 0 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
-# under_rep_on = 0 #0: no under reporting, 1: calculate with under-reporting
-
-# # for ur only
-# cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
-# use_inc = 1 #1: control for incidence, 0: control for infectiousness
-# delay_calc_v = 0 #1: as in ref, 0: from incidence
-# under_rep_calc = 3 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
-# distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-# delay_on = 0 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
-# under_rep_on = 1 #0: no under reporting, 1: calculate with under-reporting
-
-# # for delay only
-# cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
-# use_inc = 1 #1: control for incidence, 0: control for infectiousness
-# delay_calc_v = 0 #1: as in ref, 0: from incidence
-# under_rep_calc = 1 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
-# distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-# delay_on = 1 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
-# under_rep_on = 0 #0: no under reporting, 1: calculate with under-reporting
-
-# # for delay and ur
 cost_sel = 1 #1: bilinear+oveshoot, 2: flat+quadratic for overshoot
 use_inc = 1 #1: control for incidence, 0: control for infectiousness
 delay_calc_v = 0 #1: as in ref, 0: from incidence
-under_rep_calc = 3 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho
+under_rep_calc = 3 #1: as in ref, 0: separately, from incidence, 2: same, but using a beta distribution for rho, 3: using beta binomial (only lately implemented)
 distr_sel = 1 #0: Deterministic, 1: Poisson, 2: Binomial
-delay_on = 1 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
+delay_on = 0 #1: sim with time-delay, 0: no-delay (if 0, set delay_calc_v = 0)
 under_rep_on = 1 #0: no under reporting, 1: calculate with under-reporting
 
-binn = 10 
+binn = 10
 #est_R = 1 #1: when making predictions use R estimated from data. 0: use model R
 
 #The cost function
@@ -132,9 +106,10 @@ cost_of_state = [0.0, 0.01, 0.15] #Cost of interventions/day
 Lc_target = 5000 #desired infectiousness
 Lc_target_pen = Lc_target*1.5 #extra overshoot penalty
 R_target = 1.0
-#alpha = 1.3/Lc_target #~proportional gain (regulates error) covid
-alpha = 3.25/Lc_target #~proportional gain (regulates error) ebola
+alpha = 1.3/Lc_target #~proportional gain (regulates error) covid
+#alpha = 3.25/Lc_target #~proportional gain (regulates error) ebola
 beta = 0.0 #~derivative gain (regulates error velocity)
+cost_of_state = [0.0, 0.01, 0.15]
 ovp = 5.0 #overshoot penalty
 γ = 0.95 #discounting factor
 
@@ -143,24 +118,36 @@ n_ens = 100 #MC assembly size for 4
 sim_ens = 100 #assembly size for full simulation
 
 #Frequecy of policy review
-rf = 14 #days 7
+rf = 7 #days 14
 R_est_wind = 5#rf-2 #window for R estimation
 use_S = 0
 
 #Prediction window
-pred_days = 14 #14 #21 #12
+pred_days = 12 #14 #21 #12
 days = 1:ndays+pred_days
 
 #Distribution of the reporting delay
 
-Ydel = Gamma(del_disp, repd_mean/del_disp)
+Ydel = Gamma(repd_mean*del_disp, 1/del_disp)
 Ydelpdf = pdf.(Ydel,days)
 cdelpdf = sum(Ydelpdf)
 nYdel = Ydelpdf/cdelpdf
 
-plt.plot(days,nYdel)
+plt.plot(nYdel)
 plt.xlim([0,25])
 plt.show()
+
+urexp = BetaBinomial(20, rho_beta_a, rho_beta_b)
+urexpdel = pdf.(urexp,0:20)
+
+plt.plot(urexpdel)
+plt.xlim([0,20])
+plt.show()
+
+rand(urexp, 100)
+
+
+
 
 if delay_on == 0
     nYdel = zeros(length(days))
@@ -236,10 +223,6 @@ Ypdf = pdf.(Y,days)
 cpdf = sum(Ypdf)
 nY = Ypdf/cpdf
 
-plt.plot(days,nY)
-plt.xlim([0,25])
-plt.show()
-
 #Risk of death wrt. time of becoming infectious
 
 Yd = Erlang(7, 3.0)
@@ -269,7 +252,14 @@ R0est[1,:] .= 1.0
 #Perform the simulation
 Threads.@threads for ii in 1:sim_ens
     #repd_ii = repd[ii]
-    Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds_noS(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par)
+    Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds_noS_segment(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par, 1, 130)
+end
+
+par.R0 = R01
+
+Threads.@threads for ii in 1:sim_ens
+    #repd_ii = repd[ii]
+    Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii] = EpiRun_preds_noS_segment(Ivect[:,ii], Revect[:,ii], Lvect[:,ii], Lcvect[:,ii], Ldvect[:,ii], Dvect[:,ii], Svect[:,ii], cvect[:,ii], Rewvect[:,ii], policy[:,ii], Rest[:,ii], R0est[:,ii], nY, nYd, reward, par, 131, ndays)
 end
 
 ## Save results
@@ -659,7 +649,7 @@ plt.xlim([0,ndays])
 plt.xlabel("time [days]")
 plt.ylabel("New infections")
 
-cd("figs4/ebola_real14_bin")
+cd("figs4/covid_ur_demo_small_disp")
 plt.savefig("incidence_multi.svg")
 plt.show()
 
