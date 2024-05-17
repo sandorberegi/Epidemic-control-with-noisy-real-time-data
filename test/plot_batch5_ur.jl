@@ -42,9 +42,9 @@ Lc_target = 5000 #desired infectiousness
 
 #filename = "rerun3_opt_rf_$(rf)_gamma_$(γ)_no_del_urv_$(1)_under_$(ur)_noS_BIN.jld"
 
-#filename = "rerun2_rf_3_gamma_$(γ)_no_del_urv_$(1)_under_$(ur)_threshold_then_cyclic_ur_9_75_BIN.jld"
+filename = "rerun2_rf_3_gamma_$(γ)_no_del_urv_$(1)_under_$(ur)_threshold_then_cyclic_ur_9_75_BIN.jld"
 
-filename = "rerun3_rf_$(rf)_gamma_$(γ)_no_del_urv_$(1)_under_$(ur)_noS_thr_inc_covid_BIN.jld"
+#filename = "rerun3_rf_$(rf)_gamma_$(γ)_no_del_urv_$(1)_under_$(ur)_noS_thr_inc_covid_BIN.jld"
 data = load(filename)
 
 mean_of_peaks = zeros(length(delays))
@@ -144,9 +144,9 @@ for ii in 6:6
 
             #filename = "rerun3_opt_rf_$(rf)_gamma_$(γ)_no_del_urv_$(ur_disp)_under_$(ur)_noS_BIN.jld"
             
-            #filename = "rerun2_rf_3_gamma_$(γ)_no_del_urv_$(ur_disp)_under_$(ur)_threshold_then_cyclic_ur_9_75_BIN.jld"
+            filename = "rerun2_rf_3_gamma_$(γ)_no_del_urv_$(ur_disp)_under_$(ur)_threshold_then_cyclic_ur_9_75_BIN.jld"
 
-            filename = "rerun3_rf_$(rf)_gamma_$(γ)_no_del_urv_$(ur_disp)_under_$(ur)_noS_thr_inc_covid_BIN.jld"
+            #filename = "rerun3_rf_$(rf)_gamma_$(γ)_no_del_urv_$(ur_disp)_under_$(ur)_noS_thr_inc_covid_BIN.jld"
             data = load(filename)
 
             #Plot peak incidence
@@ -322,14 +322,6 @@ plt.savefig("costs_ur2.png", dpi=300)
 plt.savefig("costs_ur2.svg", dpi=300)
 plt.show()
 
-sns.catplot(x="ur",y="costs", hue="a", data=datafr, legend=true, s=2, marker="D", alpha=0.2, dodge=true)
-#plt.plot(0:length(delays)-1, mean_of_peaks, color="black", marker="D")
-plt.xlabel("Mean reporting rate")
-plt.ylabel("Costs")
-plt.savefig("costs_ur.png", dpi=300)
-plt.savefig("costs_ur.svg", dpi=300)
-plt.show()
-
 sns.barplot(x="ur2",y="total", hue="a2", data=datafr, color="green")
 sns.barplot(x="ur2",y="ivs", hue="a2", data=datafr, color="purple")
 sns.barplot(x="ur2",y="LD", hue="a2", data=datafr, color="red")
@@ -340,24 +332,5 @@ plt.legend([], [], frameon=false)
 plt.savefig("interventions.png", dpi=300)
 plt.savefig("interventions.svg", dpi=300)
 plt.show()
-
-# sns.set(style="white")
-# sns.displot(data=datafr, x="max_infs", shrink=0.9, hue="a", kde=true, fill=true, alpha=0.2, bins=40)
-# plt.xlabel("Peak incidence")
-# #plt.xlim([0, 100000])
-# plt.savefig("peaks_hists_delay_($ur).png", dpi=300)
-# plt.show()
-
-# sns.displot(data=datafr, x="env", shrink=0.9, hue="a", kde=true, fill=true, alpha=0.2, bins=40)
-# plt.xlabel("Envelope size")
-# #plt.xlim([0, 100000])
-# plt.savefig("envs_hists_delay_($ur).png", dpi=300)
-# plt.show()
-
-# sns.displot(data=datafr, x="all_infs", shrink=0.9, hue="a", kde=true, fill=true, alpha=0.2, bins=40)
-# plt.xlabel("Total incidence")
-# #plt.xlim([1000000, 8000000])
-# plt.savefig("Tot_inc_hists_delay_($ur).png", dpi=300)
-# plt.show()
 
 cd("../..")
