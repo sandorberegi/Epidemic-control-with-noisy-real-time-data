@@ -2,7 +2,9 @@
 
 Deciding when to enforce or relax non-pharmaceutical interventions (NPIs) is crucial in controlling the spread of infectious diseases. However, challenges arise from reporting delays and under-ascertainment of infections in real-time outbreak surveillance data, which can lead to mistimed NPIs and overload healthcare capacities during epidemic peaks. To address these challenges, we present a novel model-predictive control algorithm that optimises NPI decisions by minimising both their cumulative future risks and associated costs over stochastic epidemic projections.
 
-Here we publish the code to carry out the calculations published in [PAPER link to come]
+This code is related to the paper: 
+Sandor Beregi, Kris V. Parag, **Optimal algorithms for controlling infectious diseases in real time using noisy infection data**. 
+This paper is under peer-review the preprint is available on MedRXiv [Link]()
 
 ## Usage:
 The codes can be run by installing [Epicont.jl](src/EpiCont.jl) as a Julia package.
