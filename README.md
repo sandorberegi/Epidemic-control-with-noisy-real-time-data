@@ -4,7 +4,7 @@ Deciding when to enforce or relax non-pharmaceutical interventions (NPIs) is cru
 
 This code is related to the paper: 
 Sandor Beregi, Kris V. Parag, **Optimal algorithms for controlling infectious diseases in real time using noisy infection data**. 
-This paper is under peer-review the preprint is available on MedRXiv [Link]()
+This paper is under peer-review the preprint is available on MedRXiv [coming soon]()
 
 ## Usage:
 The codes can be run by installing [Epicont.jl](src/EpiCont.jl) as a Julia package.
